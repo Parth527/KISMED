@@ -44,24 +44,19 @@ def predict_labels(ecg_leads : List[np.ndarray], fs : float, ecg_names : List[st
     model = load_model('1DCNN_best_model.h5')
     predictions = list()
     dataloader = DataLoader()
-    ECG_Heartbeats = dataloader.process_signals(signals=ecg_leads, ecg_names=ecg_names, sampling_rate=fs, save=False, save_name = 'ECG_heartbeats.pkl', )
-    X, ecg_name = dataloader.prepare_input_challenge(ECG_Heartbeats)
-    y_pred_prob = model.predict(X)
-    y_pred_classes = y_pred_prob.argmax(axis=1)
-    for ecg,y in zip(ecg_name, y_pred_classes):
-            if y == 1:
-                predictions.append((ecg, 'A'))
-            else:
-                predictions.append((ecg, 'N'))
-    pred_set = list(set(predictions))
-    visited_data = set()
-    predictions = []
-    for a, b in sorted(pred_set):
-        if not a in visited_data:
-            visited_data.add(a)
-            predictions.append((a, b))
-#------------------------------------------------------------------------------    
-    return predictions # Liste von Tupels im Format (ecg_name,label) - Muss unverändert bleiben!
+    for ecg_name, ecg in zip(ecg_names, ecg_leads):
+
+        ECG_Heartbeats, _, _ = dataloader.extract_heartbeats(ecg / 1000, sampling_rate=fs)
+        y_pred_prob = model.predict(ECG_Heartbeats)
+        y_pred = y_pred_prob.argmax(axis=1)
+
+        if np.count_nonzero(y_pred) > 0:
+            predictions.append((ecg_name, 'A'))
+        else:
+            predictions.append((ecg_name, 'N'))
+    # ------------------------------------------------------------------------------
+    return predictions  # Liste von Tupels im Format (ecg_name,label) - Muss unverändert bleiben!
+
                                
                                
         
